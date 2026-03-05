@@ -2,15 +2,13 @@
 
 ## Use Cases
 
-Most existing Levenshtein libraries are not very flexible: all edit operations have cost 1.
+Most Levenshtein libraries assign a cost of 1 to every edit operation. This library lets you assign different costs to insertions, deletions, substitutions, and transpositions for any combination of characters. The core algorithms are implemented in Rust via [PyO3](https://pyo3.rs/) for performance.
 
-However, sometimes not all edits are created equal. For instance, if you are doing OCR correction, maybe substituting `0` for `O` should have a smaller cost than substituting `X` for `O`. If you are doing human typo correction, maybe substituting `X` for `Z` should have a smaller cost, since they are located next to each other on a QWERTY keyboard.
+For example, in OCR correction, substituting `0` for `O` should cost less than substituting `X` for `O`. In typo correction, substituting `X` for `Z` should cost less since they are adjacent on a QWERTY keyboard.
 
-This library supports all these use cases by allowing the user to specify different weights for edit operations involving every possible combination of letters. The core algorithms are written in Rust via [PyO3](https://pyo3.rs/).
+**Levenshtein** supports per-character insertion, deletion, and substitution costs.
 
-The **Levenshtein** distance function supports setting different costs for inserting, deleting, and substituting characters — well suited for detecting OCR errors.
-
-The **Damerau-Levenshtein** distance function additionally supports transposition costs — well suited for detecting human typos.
+**Damerau-Levenshtein** additionally supports transposition costs.
 
 ## Installation
 
@@ -49,7 +47,7 @@ print(dam_lev('ABNANA', 'BANANA', transpose_costs=transpose_costs))  # 0.75
 
 `lev`, `osa`, and `dam_lev` are aliases for `levenshtein`, `optimal_string_alignment`, and `damerau_levenshtein`, respectively.
 
-## Important Notes
+## Limitations
 
 - All string lookups are case sensitive.
 - Only the first 128 ASCII characters are supported. Cost arrays are indexed by `ord()` value.
@@ -59,7 +57,7 @@ print(dam_lev('ABNANA', 'BANANA', transpose_costs=transpose_costs))  # 0.75
 
 Originally created by [David Su](https://github.com/dsu1995) at InfoScout. Rewritten in Rust by [Vikram Saraph](https://github.com/vhxs).
 
-## More Information
+## References
 
 - [Levenshtein distance / Wagner-Fischer algorithm](https://en.wikipedia.org/wiki/Wagner%E2%80%93Fischer_algorithm)
 - [Optimal String Alignment distance](https://en.wikipedia.org/wiki/Damerau%E2%80%93Levenshtein_distance#Optimal_string_alignment_distance)
