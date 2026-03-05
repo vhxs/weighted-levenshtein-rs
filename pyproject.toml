@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "weighted_levenshtein"
-version = "0.2.2"
+version = "0.3.0"
 description = "Library providing functions to calculate Levenshtein distance, Optimal String Alignment distance, and Damerau-Levenshtein distance, where the cost of each operation can be weighted by letter."
 readme = "README.md"
 license = { text = "MIT" }
@@ -17,12 +17,16 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Rust",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Text Processing :: Linguistic",
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "numpy>=1.11.1",
+    "numpy>=1.21.0",
 ]
 
 [project.urls]
