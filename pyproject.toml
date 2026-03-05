@@ -38,7 +38,7 @@ line-length = 120
 [tool.maturin]
 python-source = "."
 module-name = "weighted_levenshtein._clev"
-features = ["pyo3/extension-module"]
+features = ["pyo3/extension-module", "pyo3/abi3-py310"]
 
 [dependency-groups]
 dev = [

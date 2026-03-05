@@ -8,5 +8,5 @@ name = "_clev"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.24", features = ["extension-module"] }
+pyo3 = { version = "0.24", features = ["extension-module", "abi3-py310"] }
 numpy = "0.24"
