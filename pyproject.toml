@@ -28,6 +28,9 @@ dependencies = [
 [project.urls]
 Homepage = "https://github.com/infoscout/weighted-levenshtein"
 
+[tool.ruff]
+line-length = 120
+
 [tool.maturin]
 python-source = "."
 module-name = "weighted_levenshtein._clev"
@@ -36,4 +39,5 @@ features = ["pyo3/extension-module"]
 [dependency-groups]
 dev = [
     "pytest>=8.3.5",
+    "ruff>=0.15.4",
 ]

@@ -128,3 +128,9 @@ ENV/
 /site
 
 # End of https://www.gitignore.io/api/macos,python
+
+### Rust ###
+target/
+
+### uv ###
+.venv
