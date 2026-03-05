@@ -1,4 +1,4 @@
-# weighted-levenshtein
+# weighted-levenshtein-rs
 
 ## Use Cases
 
