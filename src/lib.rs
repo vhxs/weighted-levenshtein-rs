@@ -7,176 +7,199 @@ const ALPHABET_SIZE: usize = 128;
 // Core algorithms (pure Rust, no Python types)
 // ---------------------------------------------------------------------------
 
+// Levenshtein distance (Wagner-Fischer algorithm).
+// https://en.wikipedia.org/wiki/Wagner%E2%80%93Fischer_algorithm
+//
+// dp[i][j] = minimum cost to transform source[..i] into target[..j]
+// using weighted insertions, deletions, and substitutions.
 fn c_levenshtein(
-    str1: &[u8],
-    str2: &[u8],
+    source: &[u8],
+    target: &[u8],
     insert_costs: &[f64],
     delete_costs: &[f64],
     substitute_costs: &[f64],
 ) -> f64 {
-    let len1 = str1.len();
-    let len2 = str2.len();
-    let cols = len2 + 1;
-    let mut d = vec![0.0f64; (len1 + 1) * cols];
+    let m = source.len();
+    let n = target.len();
+    let ncols = n + 1;
+    let mut dp = vec![0.0f64; (m + 1) * ncols];
 
-    for i in 1..=len1 {
-        let ci = str1[i - 1] as usize;
-        d[i * cols] = d[(i - 1) * cols] + delete_costs[ci];
+    // Base cases: cost of deleting all of source, or inserting all of target
+    for i in 1..=m {
+        let ch_s = source[i - 1] as usize;
+        dp[i * ncols] = dp[(i - 1) * ncols] + delete_costs[ch_s];
     }
-    for j in 1..=len2 {
-        let cj = str2[j - 1] as usize;
-        d[j] = d[j - 1] + insert_costs[cj];
+    for j in 1..=n {
+        let ch_t = target[j - 1] as usize;
+        dp[j] = dp[j - 1] + insert_costs[ch_t];
     }
 
-    for i in 1..=len1 {
-        let ci = str1[i - 1] as usize;
-        for j in 1..=len2 {
-            let cj = str2[j - 1] as usize;
-            d[i * cols + j] = if ci == cj {
-                d[(i - 1) * cols + (j - 1)]
+    for i in 1..=m {
+        let ch_s = source[i - 1] as usize;
+        for j in 1..=n {
+            let ch_t = target[j - 1] as usize;
+            dp[i * ncols + j] = if ch_s == ch_t {
+                dp[(i - 1) * ncols + (j - 1)] // characters match, no cost
             } else {
-                (d[(i - 1) * cols + j] + delete_costs[ci])
-                    .min(d[i * cols + (j - 1)] + insert_costs[cj])
-                    .min(d[(i - 1) * cols + (j - 1)] + substitute_costs[ci * ALPHABET_SIZE + cj])
+                (dp[(i - 1) * ncols + j] + delete_costs[ch_s])
+                    .min(dp[i * ncols + (j - 1)] + insert_costs[ch_t])
+                    .min(dp[(i - 1) * ncols + (j - 1)] + substitute_costs[ch_s * ALPHABET_SIZE + ch_t])
             };
         }
     }
 
-    d[len1 * cols + len2]
+    dp[m * ncols + n]
 }
 
+// Optimal String Alignment distance.
+// https://en.wikipedia.org/wiki/Damerau%E2%80%93Levenshtein_distance#Optimal_string_alignment_distance
+//
+// Like Levenshtein but also allows adjacent transpositions. Note: unlike true
+// Damerau-Levenshtein, a substring may not be edited more than once.
 fn c_optimal_string_alignment(
-    str1: &[u8],
-    str2: &[u8],
+    source: &[u8],
+    target: &[u8],
     insert_costs: &[f64],
     delete_costs: &[f64],
     substitute_costs: &[f64],
     transpose_costs: &[f64],
 ) -> f64 {
-    let len1 = str1.len();
-    let len2 = str2.len();
-    let cols = len2 + 1;
-    let mut d = vec![0.0f64; (len1 + 1) * cols];
+    let m = source.len();
+    let n = target.len();
+    let ncols = n + 1;
+    let mut dp = vec![0.0f64; (m + 1) * ncols];
 
-    for i in 1..=len1 {
-        let ci = str1[i - 1] as usize;
-        d[i * cols] = d[(i - 1) * cols] + delete_costs[ci];
+    // Base cases
+    for i in 1..=m {
+        let ch_s = source[i - 1] as usize;
+        dp[i * ncols] = dp[(i - 1) * ncols] + delete_costs[ch_s];
     }
-    for j in 1..=len2 {
-        let cj = str2[j - 1] as usize;
-        d[j] = d[j - 1] + insert_costs[cj];
+    for j in 1..=n {
+        let ch_t = target[j - 1] as usize;
+        dp[j] = dp[j - 1] + insert_costs[ch_t];
     }
 
-    for i in 1..=len1 {
-        let ci = str1[i - 1] as usize;
-        for j in 1..=len2 {
-            let cj = str2[j - 1] as usize;
-            d[i * cols + j] = if ci == cj {
-                d[(i - 1) * cols + (j - 1)]
+    for i in 1..=m {
+        let ch_s = source[i - 1] as usize;
+        for j in 1..=n {
+            let ch_t = target[j - 1] as usize;
+            dp[i * ncols + j] = if ch_s == ch_t {
+                dp[(i - 1) * ncols + (j - 1)]
             } else {
-                (d[(i - 1) * cols + j] + delete_costs[ci])
-                    .min(d[i * cols + (j - 1)] + insert_costs[cj])
-                    .min(
-                        d[(i - 1) * cols + (j - 1)]
-                            + substitute_costs[ci * ALPHABET_SIZE + cj],
-                    )
+                (dp[(i - 1) * ncols + j] + delete_costs[ch_s])
+                    .min(dp[i * ncols + (j - 1)] + insert_costs[ch_t])
+                    .min(dp[(i - 1) * ncols + (j - 1)] + substitute_costs[ch_s * ALPHABET_SIZE + ch_t])
             };
 
+            // Check for adjacent transposition: source[i-2..i] == reverse of target[j-2..j]
             if i > 1 && j > 1 {
-                let prev_ci = str1[i - 2] as usize;
-                let prev_cj = str2[j - 2] as usize;
-                if ci == prev_cj && prev_ci == cj {
-                    let trans =
-                        d[(i - 2) * cols + (j - 2)] + transpose_costs[prev_ci * ALPHABET_SIZE + ci];
-                    if trans < d[i * cols + j] {
-                        d[i * cols + j] = trans;
+                let prev_ch_s = source[i - 2] as usize;
+                let prev_ch_t = target[j - 2] as usize;
+                if ch_s == prev_ch_t && prev_ch_s == ch_t {
+                    let transpose_cost = dp[(i - 2) * ncols + (j - 2)]
+                        + transpose_costs[prev_ch_s * ALPHABET_SIZE + ch_s];
+                    if transpose_cost < dp[i * ncols + j] {
+                        dp[i * ncols + j] = transpose_cost;
                     }
                 }
             }
         }
     }
 
-    d[len1 * cols + len2]
+    dp[m * ncols + n]
 }
 
+// True Damerau-Levenshtein distance with adjacent transpositions.
+// https://en.wikipedia.org/wiki/Damerau%E2%80%93Levenshtein_distance#Distance_with_adjacent_transpositions
+//
+// Unlike OSA, this allows a substring to be edited more than once, making it
+// a true metric. Uses a (-1)-indexed DP matrix with sentinel values.
 fn c_damerau_levenshtein(
-    str1: &[u8],
-    str2: &[u8],
+    source: &[u8],
+    target: &[u8],
     insert_costs: &[f64],
     delete_costs: &[f64],
     substitute_costs: &[f64],
     transpose_costs: &[f64],
 ) -> f64 {
-    let len1 = str1.len();
-    let len2 = str2.len();
+    let m = source.len();
+    let n = target.len();
 
-    // (-1)-indexed matrix stored as (i+1, j+1) in a flat array.
-    // i ranges from -1..=len1, j from -1..=len2  →  rows = len1+2, cols = len2+2
-    let cols = len2 + 2;
-    let mut d = vec![0.0f64; (len1 + 2) * cols];
+    // The DP matrix is (-1)-indexed: rows span -1..=m, cols span -1..=n.
+    // We store it as a flat array with (i+1, j+1) as the 0-based index.
+    let ncols = n + 2;
+    let mut dp = vec![0.0f64; (m + 2) * ncols];
 
-    let idx = |i: isize, j: isize| -> usize { (i + 1) as usize * cols + (j + 1) as usize };
+    // Converts (-1)-based (row, col) to a flat array index
+    let cell = |row: isize, col: isize| -> usize { (row + 1) as usize * ncols + (col + 1) as usize };
 
-    // da[c] = last 1-indexed position in str1 where character c appeared
-    let mut da = [0usize; ALPHABET_SIZE];
+    // last_row_seen[c] = last 1-indexed row in source where character c appeared
+    let mut last_row_seen = [0usize; ALPHABET_SIZE];
 
-    // Sentinel row/column: d[-1][*] = d[*][-1] = f64::MAX
-    d[idx(-1, -1)] = f64::MAX;
-    for i in 0..=(len1 as isize) {
-        d[idx(i, -1)] = f64::MAX;
+    // Sentinel row and column are set to f64::MAX to make transpositions
+    // that cross the boundary of the string prohibitively expensive
+    dp[cell(-1, -1)] = f64::MAX;
+    for i in 0..=(m as isize) {
+        dp[cell(i, -1)] = f64::MAX;
     }
-    for j in 0..=(len2 as isize) {
-        d[idx(-1, j)] = f64::MAX;
-    }
-
-    // Base cases
-    d[idx(0, 0)] = 0.0;
-    for i in 1..=len1 {
-        let ci = str1[i - 1] as usize;
-        d[idx(i as isize, 0)] = d[idx((i - 1) as isize, 0)] + delete_costs[ci];
-    }
-    for j in 1..=len2 {
-        let cj = str2[j - 1] as usize;
-        d[idx(0, j as isize)] = d[idx(0, (j - 1) as isize)] + insert_costs[cj];
+    for j in 0..=(n as isize) {
+        dp[cell(-1, j)] = f64::MAX;
     }
 
-    for i in 1..=len1 {
-        let ci = str1[i - 1] as usize;
-        let mut db = 0usize; // last position in str2 where ci appeared
+    // Base cases: cost of transforming to/from empty string
+    dp[cell(0, 0)] = 0.0;
+    for i in 1..=m {
+        let ch_s = source[i - 1] as usize;
+        dp[cell(i as isize, 0)] = dp[cell((i - 1) as isize, 0)] + delete_costs[ch_s];
+    }
+    for j in 1..=n {
+        let ch_t = target[j - 1] as usize;
+        dp[cell(0, j as isize)] = dp[cell(0, (j - 1) as isize)] + insert_costs[ch_t];
+    }
 
-        for j in 1..=len2 {
-            let cj = str2[j - 1] as usize;
-            let k = da[cj]; // last position in str1 where cj appeared
-            let l = db;
+    for i in 1..=m {
+        let ch_s = source[i - 1] as usize;
+        // last column in target where ch_s was seen (updated as we scan columns)
+        let mut last_col_match = 0usize;
 
-            let cost = if ci == cj {
-                db = j;
+        for j in 1..=n {
+            let ch_t = target[j - 1] as usize;
+            // last row in source where ch_t appeared
+            let prev_source_row = last_row_seen[ch_t];
+            // last column in target where ch_s appeared (before this iteration)
+            let prev_target_col = last_col_match;
+
+            let substitution_cost = if ch_s == ch_t {
+                last_col_match = j; // ch_s was just matched at column j
                 0.0
             } else {
-                substitute_costs[ci * ALPHABET_SIZE + cj]
+                substitute_costs[ch_s * ALPHABET_SIZE + ch_t]
             };
 
-            // col_delete_range_cost(d, k+1, i-1) = d[i-1][0] - d[k][0]
-            let col_del = d[idx((i as isize) - 1, 0)] - d[idx(k as isize, 0)];
-            // row_insert_range_cost(d, l+1, j-1) = d[0][j-1] - d[0][l]
-            let row_ins = d[idx(0, (j as isize) - 1)] - d[idx(0, l as isize)];
+            // Cost of deleting source[prev_source_row..i-1] and inserting target[prev_target_col..j-1]
+            // to bridge the gap between the transposed characters. Computed as a
+            // difference of cumulative costs stored in column 0 and row 0 of dp.
+            let delete_range_cost =
+                dp[cell((i as isize) - 1, 0)] - dp[cell(prev_source_row as isize, 0)];
+            let insert_range_cost =
+                dp[cell(0, (j as isize) - 1)] - dp[cell(0, prev_target_col as isize)];
 
-            // str1[k-1] == cj (by definition of da), str1[i-1] == ci
-            let trans_cost = d[idx((k as isize) - 1, (l as isize) - 1)]
-                + col_del
-                + transpose_costs[cj * ALPHABET_SIZE + ci]
-                + row_ins;
+            let transpose_cost = dp[cell((prev_source_row as isize) - 1, (prev_target_col as isize) - 1)]
+                + delete_range_cost
+                + transpose_costs[ch_t * ALPHABET_SIZE + ch_s]
+                + insert_range_cost;
 
-            d[idx(i as isize, j as isize)] = (d[idx((i - 1) as isize, (j - 1) as isize)] + cost)
-                .min(d[idx(i as isize, (j - 1) as isize)] + insert_costs[cj])
-                .min(d[idx((i - 1) as isize, j as isize)] + delete_costs[ci])
-                .min(trans_cost);
+            dp[cell(i as isize, j as isize)] =
+                (dp[cell((i - 1) as isize, (j - 1) as isize)] + substitution_cost)
+                    .min(dp[cell(i as isize, (j - 1) as isize)] + insert_costs[ch_t])
+                    .min(dp[cell((i - 1) as isize, j as isize)] + delete_costs[ch_s])
+                    .min(transpose_cost);
         }
 
-        da[ci] = i;
+        last_row_seen[ch_s] = i;
     }
 
-    d[idx(len1 as isize, len2 as isize)]
+    dp[cell(m as isize, n as isize)]
 }
 
 // ---------------------------------------------------------------------------
@@ -264,7 +287,7 @@ fn _clev(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(levenshtein, m)?)?;
     m.add_function(wrap_pyfunction!(optimal_string_alignment, m)?)?;
     m.add_function(wrap_pyfunction!(damerau_levenshtein, m)?)?;
-    // Aliases
+    // Short aliases
     m.add("lev", m.getattr("levenshtein")?)?;
     m.add("osa", m.getattr("optimal_string_alignment")?)?;
     m.add("dam_lev", m.getattr("damerau_levenshtein")?)?;
