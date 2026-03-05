@@ -13,7 +13,7 @@ For example, in OCR correction, substituting `0` for `O` should cost less than s
 ## Installation
 
 ```
-pip install weighted-levenshtein
+pip install weighted-levenshtein-rs
 ```
 
 ## Usage
