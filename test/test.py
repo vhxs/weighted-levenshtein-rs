@@ -1,185 +1,200 @@
-from __future__ import absolute_import, print_function
-
-import unittest
-
 import numpy as np
+import pytest
 
 from weighted_levenshtein import dam_lev, lev, osa
 
 
-class TestClev(unittest.TestCase):
-
-    def setUp(self):
-        self.iw = np.ones(128, dtype=np.float64)
-        self.dw = np.ones(128, dtype=np.float64)
-        self.sw = np.ones((128, 128), dtype=np.float64)
-        self.tw = np.ones((128, 128), dtype=np.float64)
-
-    def _lev(self, x, y):
-        return lev(x, y, self.iw, self.dw, self.sw)
-
-    def _osa(self, x, y):
-        return osa(x, y, self.iw, self.dw, self.sw, self.tw)
-
-    def _dl(self, x, y):
-        return dam_lev(x, y, self.iw, self.dw, self.sw, self.tw)
-
-    def test_lev(self):
-        self.assertEqual(self._lev('1234', '1234'), 0.0)
-        self.assertEqual(self._lev('', '1234'), 4.0)
-        self.assertEqual(self._lev('1234', ''), 4.0)
-        self.assertEqual(self._lev('', ''), 0.0)
-        self.assertEqual(self._lev('1234', '12'), 2.0)
-        self.assertEqual(self._lev('1234', '14'), 2.0)
-        self.assertEqual(self._lev('1111', '1'), 3.0)
-
-    def test_lev_insert(self):
-        self.iw[ord('a')] = 5
-        self.assertEqual(self._lev('', 'a'), 5.0)
-        self.assertEqual(self._lev('a', ''), 1.0)
-        self.assertEqual(self._lev('', 'aa'), 10.0)
-        self.assertEqual(self._lev('a', 'aa'), 5.0)
-        self.assertEqual(self._lev('aa', 'a'), 1.0)
-        self.assertEqual(self._lev('asdf', 'asdf'), 0.0)
-        self.assertEqual(self._lev('xyz', 'abc'), 3.0)
-        self.assertEqual(self._lev('xyz', 'axyz'), 5.0)
-        self.assertEqual(self._lev('x', 'ax'), 5.0)
-
-    def test_lev_delete(self):
-        self.dw[ord('z')] = 7.5
-        self.assertEqual(self._lev('', 'z'), 1.0)
-        self.assertEqual(self._lev('z', ''), 7.5)
-        self.assertEqual(self._lev('xyz', 'zzxz'), 3.0)
-        self.assertEqual(self._lev('zzxzzz', 'xyz'), 18.0)
-
-    def test_lev_substitute(self):
-        self.sw[ord('a'), ord('z')] = 1.2
-        self.sw[ord('z'), ord('a')] = 0.1
-        self.assertEqual(self._lev('a', 'z'), 1.2)
-        self.assertEqual(self._lev('z', 'a'), 0.1)
-        self.assertEqual(self._lev('a', ''), 1)
-        self.assertEqual(self._lev('', 'a'), 1)
-        self.assertEqual(self._lev('asdf', 'zzzz'), 4.2)
-        self.assertEqual(self._lev('asdf', 'zz'), 4.0)
-        self.assertEqual(self._lev('asdf', 'zsdf'), 1.2)
-        self.assertEqual(self._lev('zsdf', 'asdf'), 0.1)
-
-    def test_osa(self):
-        self.assertEqual(self._osa('1234', '1234'), 0.0)
-        self.assertEqual(self._osa('', '1234'), 4.0)
-        self.assertEqual(self._osa('1234', ''), 4.0)
-        self.assertEqual(self._osa('', ''), 0.0)
-        self.assertEqual(self._osa('1234', '12'), 2.0)
-        self.assertEqual(self._osa('1234', '14'), 2.0)
-        self.assertEqual(self._osa('1111', '1'), 3.0)
-
-    def test_osa_insert(self):
-        self.iw[ord('a')] = 5
-        self.assertEqual(self._osa('', 'a'), 5.0)
-        self.assertEqual(self._osa('a', ''), 1.0)
-        self.assertEqual(self._osa('', 'aa'), 10.0)
-        self.assertEqual(self._osa('a', 'aa'), 5.0)
-        self.assertEqual(self._osa('aa', 'a'), 1.0)
-        self.assertEqual(self._osa('asdf', 'asdf'), 0.0)
-        self.assertEqual(self._osa('xyz', 'abc'), 3.0)
-        self.assertEqual(self._osa('xyz', 'axyz'), 5.0)
-        self.assertEqual(self._osa('x', 'ax'), 5.0)
-
-    def test_osa_delete(self):
-        self.dw[ord('z')] = 7.5
-        self.assertEqual(self._osa('', 'z'), 1.0)
-        self.assertEqual(self._osa('z', ''), 7.5)
-        self.assertEqual(self._osa('xyz', 'zzxz'), 3.0)
-        self.assertEqual(self._osa('zzxzzz', 'xyz'), 18.0)
-
-    def test_osa_substitute(self):
-        self.sw[ord('a'), ord('z')] = 1.2
-        self.sw[ord('z'), ord('a')] = 0.1
-        self.assertEqual(self._osa('a', 'z'), 1.2)
-        self.assertEqual(self._osa('z', 'a'), 0.1)
-        self.assertEqual(self._osa('a', ''), 1)
-        self.assertEqual(self._osa('', 'a'), 1)
-        self.assertEqual(self._osa('asdf', 'zzzz'), 4.2)
-        self.assertEqual(self._osa('asdf', 'zz'), 4.0)
-        self.assertEqual(self._osa('asdf', 'zsdf'), 1.2)
-        self.assertEqual(self._osa('zsdf', 'asdf'), 0.1)
-
-    def test_osa_transpose(self):
-        self.tw[ord('a'), ord('z')] = 1.5
-        self.tw[ord('z'), ord('a')] = 0.5
-        self.assertEqual(self._osa('az', 'za'), 1.5)
-        self.assertEqual(self._osa('za', 'az'), 0.5)
-        self.assertEqual(self._osa('az', 'zfa'), 3)
-        self.assertEqual(self._osa('azza', 'zaaz'), 2)
-        self.assertEqual(self._osa('zaaz', 'azza'), 2)
-        self.assertEqual(self._osa('azbza', 'zabaz'), 2)
-        self.assertEqual(self._osa('zabaz', 'azbza'), 2)
-        self.assertEqual(self._osa('azxza', 'zayaz'), 3)
-        self.assertEqual(self._osa('zaxaz', 'azyza'), 3)
-
-    def test_dl(self):
-        self.assertEqual(self._dl('', ''), 0)
-        self.assertEqual(self._dl('', 'a'), 1)
-        self.assertEqual(self._dl('a', ''), 1)
-        self.assertEqual(self._dl('a', 'b'), 1)
-        self.assertEqual(self._dl('a', 'ab'), 1)
-        self.assertEqual(self._dl('ab', 'ba'), 1)
-        self.assertEqual(self._dl('ab', 'bca'), 2)
-        self.assertEqual(self._dl('bca', 'ab'), 2)
-        self.assertEqual(self._dl('ab', 'bdca'), 3)
-        self.assertEqual(self._dl('bdca', 'ab'), 3)
-
-    def test_dl_transpose(self):
-        self.iw[ord('c')] = 1.9
-        self.assertEqual(self._dl('ab', 'bca'), 2.9)
-        self.assertEqual(self._dl('ab', 'bdca'), 3.9)
-        self.assertEqual(self._dl('bca', 'ab'), 2)
-
-    def test_dl_transpose2(self):
-        self.dw[ord('c')] = 1.9
-        self.assertEqual(self._dl('bca', 'ab'), 2.9)
-        self.assertEqual(self._dl('bdca', 'ab'), 3.9)
-        self.assertEqual(self._dl('ab', 'bca'), 2)
-
-    def test_dl_transpose3(self):
-        self.tw[ord('a'), ord('b')] = 1.5
-        self.assertEqual(self._dl('ab', 'bca'), 2.5)
-        self.assertEqual(self._dl('bca', 'ab'), 2)
-
-    def test_dl_transpose4(self):
-        self.tw[ord('b'), ord('a')] = 1.5
-        self.assertEqual(self._dl('ab', 'bca'), 2)
-        self.assertEqual(self._dl('bca', 'ab'), 2.5)
+@pytest.fixture
+def weights():
+    return {
+        'iw': np.ones(128, dtype=np.float64),
+        'dw': np.ones(128, dtype=np.float64),
+        'sw': np.ones((128, 128), dtype=np.float64),
+        'tw': np.ones((128, 128), dtype=np.float64),
+    }
 
 
-class TestClevUsingDefaultValues(unittest.TestCase):
+def _lev(w, x, y):
+    return lev(x, y, w['iw'], w['dw'], w['sw'])
 
-    def test_lev(self):
-        self.assertEqual(lev('1234', '1234'), 0.0)
-        self.assertEqual(lev('', '1234'), 4.0)
-        self.assertEqual(lev('1234', ''), 4.0)
-        self.assertEqual(lev('', ''), 0.0)
-        self.assertEqual(lev('1234', '12'), 2.0)
-        self.assertEqual(lev('1234', '14'), 2.0)
-        self.assertEqual(lev('1111', '1'), 3.0)
 
-    def test_osa(self):
-        self.assertEqual(osa('1234', '1234'), 0.0)
-        self.assertEqual(osa('', '1234'), 4.0)
-        self.assertEqual(osa('1234', ''), 4.0)
-        self.assertEqual(osa('', ''), 0.0)
-        self.assertEqual(osa('1234', '12'), 2.0)
-        self.assertEqual(osa('1234', '14'), 2.0)
-        self.assertEqual(osa('1111', '1'), 3.0)
+def _osa(w, x, y):
+    return osa(x, y, w['iw'], w['dw'], w['sw'], w['tw'])
 
-    def test_dl(self):
-        self.assertEqual(dam_lev('', ''), 0)
-        self.assertEqual(dam_lev('', 'a'), 1)
-        self.assertEqual(dam_lev('a', ''), 1)
-        self.assertEqual(dam_lev('a', 'b'), 1)
-        self.assertEqual(dam_lev('a', 'ab'), 1)
-        self.assertEqual(dam_lev('ab', 'ba'), 1)
-        self.assertEqual(dam_lev('ab', 'bca'), 2)
-        self.assertEqual(dam_lev('bca', 'ab'), 2)
-        self.assertEqual(dam_lev('ab', 'bdca'), 3)
-        self.assertEqual(dam_lev('bdca', 'ab'), 3)
+
+def _dl(w, x, y):
+    return dam_lev(x, y, w['iw'], w['dw'], w['sw'], w['tw'])
+
+
+def test_lev(weights):
+    assert _lev(weights, '1234', '1234') == 0.0
+    assert _lev(weights, '', '1234') == 4.0
+    assert _lev(weights, '1234', '') == 4.0
+    assert _lev(weights, '', '') == 0.0
+    assert _lev(weights, '1234', '12') == 2.0
+    assert _lev(weights, '1234', '14') == 2.0
+    assert _lev(weights, '1111', '1') == 3.0
+
+
+def test_lev_insert(weights):
+    weights['iw'][ord('a')] = 5
+    assert _lev(weights, '', 'a') == 5.0
+    assert _lev(weights, 'a', '') == 1.0
+    assert _lev(weights, '', 'aa') == 10.0
+    assert _lev(weights, 'a', 'aa') == 5.0
+    assert _lev(weights, 'aa', 'a') == 1.0
+    assert _lev(weights, 'asdf', 'asdf') == 0.0
+    assert _lev(weights, 'xyz', 'abc') == 3.0
+    assert _lev(weights, 'xyz', 'axyz') == 5.0
+    assert _lev(weights, 'x', 'ax') == 5.0
+
+
+def test_lev_delete(weights):
+    weights['dw'][ord('z')] = 7.5
+    assert _lev(weights, '', 'z') == 1.0
+    assert _lev(weights, 'z', '') == 7.5
+    assert _lev(weights, 'xyz', 'zzxz') == 3.0
+    assert _lev(weights, 'zzxzzz', 'xyz') == 18.0
+
+
+def test_lev_substitute(weights):
+    weights['sw'][ord('a'), ord('z')] = 1.2
+    weights['sw'][ord('z'), ord('a')] = 0.1
+    assert _lev(weights, 'a', 'z') == 1.2
+    assert _lev(weights, 'z', 'a') == 0.1
+    assert _lev(weights, 'a', '') == 1
+    assert _lev(weights, '', 'a') == 1
+    assert _lev(weights, 'asdf', 'zzzz') == 4.2
+    assert _lev(weights, 'asdf', 'zz') == 4.0
+    assert _lev(weights, 'asdf', 'zsdf') == 1.2
+    assert _lev(weights, 'zsdf', 'asdf') == 0.1
+
+
+def test_osa(weights):
+    assert _osa(weights, '1234', '1234') == 0.0
+    assert _osa(weights, '', '1234') == 4.0
+    assert _osa(weights, '1234', '') == 4.0
+    assert _osa(weights, '', '') == 0.0
+    assert _osa(weights, '1234', '12') == 2.0
+    assert _osa(weights, '1234', '14') == 2.0
+    assert _osa(weights, '1111', '1') == 3.0
+
+
+def test_osa_insert(weights):
+    weights['iw'][ord('a')] = 5
+    assert _osa(weights, '', 'a') == 5.0
+    assert _osa(weights, 'a', '') == 1.0
+    assert _osa(weights, '', 'aa') == 10.0
+    assert _osa(weights, 'a', 'aa') == 5.0
+    assert _osa(weights, 'aa', 'a') == 1.0
+    assert _osa(weights, 'asdf', 'asdf') == 0.0
+    assert _osa(weights, 'xyz', 'abc') == 3.0
+    assert _osa(weights, 'xyz', 'axyz') == 5.0
+    assert _osa(weights, 'x', 'ax') == 5.0
+
+
+def test_osa_delete(weights):
+    weights['dw'][ord('z')] = 7.5
+    assert _osa(weights, '', 'z') == 1.0
+    assert _osa(weights, 'z', '') == 7.5
+    assert _osa(weights, 'xyz', 'zzxz') == 3.0
+    assert _osa(weights, 'zzxzzz', 'xyz') == 18.0
+
+
+def test_osa_substitute(weights):
+    weights['sw'][ord('a'), ord('z')] = 1.2
+    weights['sw'][ord('z'), ord('a')] = 0.1
+    assert _osa(weights, 'a', 'z') == 1.2
+    assert _osa(weights, 'z', 'a') == 0.1
+    assert _osa(weights, 'a', '') == 1
+    assert _osa(weights, '', 'a') == 1
+    assert _osa(weights, 'asdf', 'zzzz') == 4.2
+    assert _osa(weights, 'asdf', 'zz') == 4.0
+    assert _osa(weights, 'asdf', 'zsdf') == 1.2
+    assert _osa(weights, 'zsdf', 'asdf') == 0.1
+
+
+def test_osa_transpose(weights):
+    weights['tw'][ord('a'), ord('z')] = 1.5
+    weights['tw'][ord('z'), ord('a')] = 0.5
+    assert _osa(weights, 'az', 'za') == 1.5
+    assert _osa(weights, 'za', 'az') == 0.5
+    assert _osa(weights, 'az', 'zfa') == 3
+    assert _osa(weights, 'azza', 'zaaz') == 2
+    assert _osa(weights, 'zaaz', 'azza') == 2
+    assert _osa(weights, 'azbza', 'zabaz') == 2
+    assert _osa(weights, 'zabaz', 'azbza') == 2
+    assert _osa(weights, 'azxza', 'zayaz') == 3
+    assert _osa(weights, 'zaxaz', 'azyza') == 3
+
+
+def test_dl(weights):
+    assert _dl(weights, '', '') == 0
+    assert _dl(weights, '', 'a') == 1
+    assert _dl(weights, 'a', '') == 1
+    assert _dl(weights, 'a', 'b') == 1
+    assert _dl(weights, 'a', 'ab') == 1
+    assert _dl(weights, 'ab', 'ba') == 1
+    assert _dl(weights, 'ab', 'bca') == 2
+    assert _dl(weights, 'bca', 'ab') == 2
+    assert _dl(weights, 'ab', 'bdca') == 3
+    assert _dl(weights, 'bdca', 'ab') == 3
+
+
+def test_dl_transpose(weights):
+    weights['iw'][ord('c')] = 1.9
+    assert _dl(weights, 'ab', 'bca') == 2.9
+    assert _dl(weights, 'ab', 'bdca') == 3.9
+    assert _dl(weights, 'bca', 'ab') == 2
+
+
+def test_dl_transpose2(weights):
+    weights['dw'][ord('c')] = 1.9
+    assert _dl(weights, 'bca', 'ab') == 2.9
+    assert _dl(weights, 'bdca', 'ab') == 3.9
+    assert _dl(weights, 'ab', 'bca') == 2
+
+
+def test_dl_transpose3(weights):
+    weights['tw'][ord('a'), ord('b')] = 1.5
+    assert _dl(weights, 'ab', 'bca') == 2.5
+    assert _dl(weights, 'bca', 'ab') == 2
+
+
+def test_dl_transpose4(weights):
+    weights['tw'][ord('b'), ord('a')] = 1.5
+    assert _dl(weights, 'ab', 'bca') == 2
+    assert _dl(weights, 'bca', 'ab') == 2.5
+
+
+def test_lev_defaults():
+    assert lev('1234', '1234') == 0.0
+    assert lev('', '1234') == 4.0
+    assert lev('1234', '') == 4.0
+    assert lev('', '') == 0.0
+    assert lev('1234', '12') == 2.0
+    assert lev('1234', '14') == 2.0
+    assert lev('1111', '1') == 3.0
+
+
+def test_osa_defaults():
+    assert osa('1234', '1234') == 0.0
+    assert osa('', '1234') == 4.0
+    assert osa('1234', '') == 4.0
+    assert osa('', '') == 0.0
+    assert osa('1234', '12') == 2.0
+    assert osa('1234', '14') == 2.0
+    assert osa('1111', '1') == 3.0
+
+
+def test_dl_defaults():
+    assert dam_lev('', '') == 0
+    assert dam_lev('', 'a') == 1
+    assert dam_lev('a', '') == 1
+    assert dam_lev('a', 'b') == 1
+    assert dam_lev('a', 'ab') == 1
+    assert dam_lev('ab', 'ba') == 1
+    assert dam_lev('ab', 'bca') == 2
+    assert dam_lev('bca', 'ab') == 2
+    assert dam_lev('ab', 'bdca') == 3
+    assert dam_lev('bdca', 'ab') == 3

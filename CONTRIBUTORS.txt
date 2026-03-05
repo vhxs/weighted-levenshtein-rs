@@ -1,13 +1,12 @@
 # Contributions to the weighted-levenshtein project
 
-## Creator
+## Original Creator
 
 * David Su <dysu1995@gmail.com>, GitHub: dsu1995
 
-## Maintainer
+## Rust Rewrite & Maintainer
 
-* David Su and InfoScout <oss@infoscoutinc.com>
-
+* Vikram Saraph <vikram.saraph.22@gmail.com>, GitHub: vhxs
 
 ## Contributors
 

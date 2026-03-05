@@ -1,3 +1,39 @@
 [build-system]
-build-backend = "setuptools.build_meta"
-requires = ["Cython", "setuptools>=18.0", "wheel"]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "weighted_levenshtein"
+version = "0.2.2"
+description = "Library providing functions to calculate Levenshtein distance, Optimal String Alignment distance, and Damerau-Levenshtein distance, where the cost of each operation can be weighted by letter."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Vikram Saraph", email = "vikram.saraph.22@gmail.com" }]
+maintainers = [{ name = "Vikram Saraph", email = "vikram.saraph.22@gmail.com" }]
+keywords = ["Levenshtein", "Damerau", "weight", "weighted", "distance"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing :: Linguistic",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "numpy>=1.11.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/infoscout/weighted-levenshtein"
+
+[tool.maturin]
+python-source = "."
+module-name = "weighted_levenshtein._clev"
+features = ["pyo3/extension-module"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+]

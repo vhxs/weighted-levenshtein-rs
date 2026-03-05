@@ -1,0 +1,12 @@
+[package]
+name = "weighted-levenshtein"
+version = "0.2.2"
+edition = "2021"
+
+[lib]
+name = "_clev"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.23", features = ["extension-module"] }
+numpy = "0.23"
