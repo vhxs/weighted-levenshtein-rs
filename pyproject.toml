@@ -30,7 +30,7 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/infoscout/weighted-levenshtein"
+Homepage = "https://github.com/vhxs/weighted-levenshtein-rs"
 
 [tool.ruff]
 line-length = 120
