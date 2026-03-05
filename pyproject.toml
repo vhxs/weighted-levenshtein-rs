@@ -3,7 +3,7 @@ requires = ["maturin>=1.0,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "weighted_levenshtein"
+name = "weighted-levenshtein-rs"
 version = "0.3.0"
 description = "Library providing functions to calculate Levenshtein distance, Optimal String Alignment distance, and Damerau-Levenshtein distance, where the cost of each operation can be weighted by letter."
 readme = "README.md"
